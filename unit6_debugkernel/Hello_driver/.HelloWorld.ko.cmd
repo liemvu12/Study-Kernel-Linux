@@ -1,0 +1,1 @@
+cmd_/home/liemvt/work/unit6/Hello_driver/HelloWorld.ko := /home/liemvt/work/unit6/gcc-arm-linux/bin/arm-linux-gnueabihf-ld -r -EL --build-id  -T ./scripts/module-common.lds -T ./arch/arm/kernel/module.lds -o /home/liemvt/work/unit6/Hello_driver/HelloWorld.ko /home/liemvt/work/unit6/Hello_driver/HelloWorld.o /home/liemvt/work/unit6/Hello_driver/HelloWorld.mod.o;  true
