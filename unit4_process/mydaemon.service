@@ -1,0 +1,15 @@
+[Unit]
+Description=My Simple Daemon
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/mydaemon
+Restart=always
+RestartSec=3
+User=nobody
+Group=nogroup
+StandardOutput=null
+StandardError=null
+
+[Install]
+WantedBy=multi-user.target
