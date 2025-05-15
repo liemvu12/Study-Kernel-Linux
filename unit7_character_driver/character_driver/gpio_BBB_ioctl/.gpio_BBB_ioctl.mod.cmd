@@ -1,0 +1,1 @@
+cmd_/home/liemvt/work/unit6/character_driver/gpio_BBB_ioctl/gpio_BBB_ioctl.mod := { echo  /home/liemvt/work/unit6/character_driver/gpio_BBB_ioctl/gpio_BBB_ioctl.o;  echo; } > /home/liemvt/work/unit6/character_driver/gpio_BBB_ioctl/gpio_BBB_ioctl.mod
