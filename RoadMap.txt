@@ -1,302 +1,102 @@
-# Linux Kernel cho Lập Trình Nhúng - Roadmap Học Tập
+Tuyệt vời – **BeagleBone Black (BBB)** là một lựa chọn rất tốt để học BSP vì:
 
-## 1. KIẾN THỨC CƠ BẢN (Bắt buộc)
+* Nó dùng SoC **TI AM335x**, có đầy đủ các peripheral quan trọng (UART, I2C, SPI, GPIO, eMMC, Ethernet, v.v).
+* Được cộng đồng Linux hỗ trợ mạnh (đặc biệt là trong kernel `arch/arm/mach-omap2/`, `ti/`).
+* Có tài liệu kỹ thuật rõ ràng và sơ đồ mạch chuẩn (SRM + TRM).
 
-### 1.1 Kiến Trúc Kernel
-- **Process vs Thread vs Kernel Threads**
-- **User Space vs Kernel Space**
-- **System Calls interface**
-- **Kernel modules và module loading**
-- **Memory layout của kernel**
+---
 
-### 1.2 Cơ Chế Synchronization
-```c
-// Các primitive cần nắm vững
-spinlock_t lock;
-struct mutex mutex;
-struct semaphore sem;
-struct completion done;
-atomic_t atomic_var;
-```
+## 🎯 Chương trình học BSP với BeagleBone Black (BBB)
 
-### 1.3 Memory Management Cơ Bản
-- **kmalloc(), kfree(), vmalloc()**
-- **DMA memory allocation**
-- **Memory mapping (ioremap, mmap)**
-- **Cache coherency issues**
+### 📆 Tổng thời gian: 4–6 tháng
 
-## 2. DEVICE DRIVERS (Cốt lõi)
+Chia làm 4 phase – mỗi phase từ 4–6 tuần, theo đúng hướng tiếp cận của team BSP chuyên nghiệp.
 
-### 2.1 Character Device Drivers
-```c
-// Framework cơ bản cần hiểu
-static const struct file_operations fops = {
-    .owner = THIS_MODULE,
-    .open = device_open,
-    .release = device_release,
-    .read = device_read,
-    .write = device_write,
-    .unlocked_ioctl = device_ioctl,
-};
-```
+---
 
-**Ứng dụng:** UART, GPIO, sensors, custom protocols
+### 🔹 **Phase 1: Nền tảng BSP & GPIO (4 tuần)**
 
-### 2.2 Platform Drivers (Quan trọng nhất)
-```c
-// Structure cần nắm vững
-struct platform_driver {
-    int (*probe)(struct platform_device *);
-    int (*remove)(struct platform_device *);
-    struct device_driver driver;
-};
-```
+**Mục tiêu**: Làm quen hạ tầng kernel, hiểu device tree, viết driver đơn giản.
 
-**Ứng dụng:** SoC peripherals, memory-mapped devices
+| Tuần | Nội dung học           | Mục tiêu thực hành                  |
+| ---- | ---------------------- | ----------------------------------- |
+| 1    | Kiến trúc kernel + BSP | Build kernel cho BBB, load bằng SD  |
+| 2    | Device Tree cơ bản     | Hiểu `.dts`, `.dtsi`, node cấu hình |
+| 3    | Platform Driver API    | Viết driver bật LED qua GPIO        |
+| 4    | GPIO + IRQ             | Viết driver đọc button, xử lý ngắt  |
 
-### 2.3 I2C/SPI Drivers
-```c
-// I2C driver structure
-static struct i2c_driver my_driver = {
-    .driver = {
-        .name = "my-i2c-device",
-        .of_match_table = my_of_match,
-    },
-    .probe = my_probe,
-    .remove = my_remove,
-};
-```
+📌 Kết quả: Tự viết module kernel dùng GPIO và Device Tree.
 
-**Ứng dụng:** Sensors, EEPROMs, RTCs, ADCs
+---
 
-### 2.4 Network Device Drivers
-- **net_device structure**
-- **Socket buffers (sk_buff)**
-- **NAPI (New API) polling**
+### 🔹 **Phase 2: Core Infrastructure (6 tuần)**
 
-**Ứng dụng:** Ethernet, WiFi, custom network protocols
+**Mục tiêu**: Hiểu hệ thống clock, pinctrl, reset – các phần không thể thiếu của BSP.
 
-## 3. DEVICE TREE (Bắt buộc cho ARM)
+| Tuần | Nội dung          | Bài tập                                        |
+| ---- | ----------------- | ---------------------------------------------- |
+| 5    | Clock Framework   | Viết clock driver giả, enable clk cho PWM      |
+| 6    | Pinctrl Framework | Phân tích pinmux của BBB từ `.dts`             |
+| 7    | Reset Controller  | Tìm hiểu reset domain của AM335x               |
+| 8    | UART Console      | Enable UART1, viết driver hello world qua UART |
+| 9–10 | Tổng hợp          | Phân tích Device Tree BBB, fix bug UART/gpio   |
 
-### 3.1 Device Tree Syntax
-```dts
-// Ví dụ cần hiểu
-my_device: device@12340000 {
-    compatible = "vendor,my-device-v1.0";
-    reg = <0x12340000 0x1000>;
-    interrupts = <0 25 IRQ_TYPE_LEVEL_HIGH>;
-    clocks = <&clk_gate 0>;
-    pinctrl-names = "default";
-    pinctrl-0 = <&device_pins>;
-    status = "okay";
-};
-```
+📌 Kết quả: Biết cách cấu hình clock + pinmux + UART cho bất kỳ SoC nào.
 
-### 3.2 Device Tree APIs
-```c
-// APIs cần nắm vững
-of_property_read_u32()
-of_get_property()
-of_find_node_by_name()
-of_match_device()
-devm_clk_get()
-```
+---
 
-## 4. INTERRUPT HANDLING (Quan trọng)
+### 🔹 **Phase 3: Communication & Storage (6 tuần)**
 
-### 4.1 Interrupt Request và Handling
-```c
-// Hard IRQ handler
-irqreturn_t my_irq_handler(int irq, void *dev_id)
-{
-    // Minimal processing
-    // Schedule tasklet/workqueue if needed
-    return IRQ_HANDLED;
-}
+**Mục tiêu**: Giao tiếp I2C, SPI, truy xuất eMMC/SD.
 
-// Threaded IRQ (recommended cho embedded)
-irqreturn_t my_threaded_irq(int irq, void *dev_id)
-{
-    // Can sleep, do heavy processing
-    return IRQ_HANDLED;
-}
-```
+| Tuần | Nội dung           | Thực hành                             |
+| ---- | ------------------ | ------------------------------------- |
+| 11   | I2C Controller     | Enable I2C1, giao tiếp EEPROM         |
+| 12   | SPI Controller     | Giao tiếp với SPI Flash hoặc loopback |
+| 13   | UART nâng cao      | DMA + truyền dữ liệu tốc độ cao       |
+| 14   | MMC/eMMC Driver    | Phân tích `omap_hsmmc`                |
+| 15   | U-Boot Device Tree | So sánh DT giữa kernel và u-boot      |
+| 16   | Tổng hợp           | Log kernel từ eMMC + boot từ SD       |
 
-### 4.2 Bottom Half Processing
-- **Tasklets** (atomic context)
-- **Workqueues** (process context)
-- **Threaded interrupts**
+📌 Kết quả: Giao tiếp thành thạo I2C, SPI, và nắm rõ SD/MMC init flow.
 
-## 5. CLOCK & POWER MANAGEMENT
+---
 
-### 5.1 Clock Framework
-```c
-// Clock APIs cần hiểu
-struct clk *clk = devm_clk_get(&pdev->dev, "my-clock");
-clk_prepare_enable(clk);
-clk_set_rate(clk, 48000000);
-clk_disable_unprepare(clk);
-```
+### 🔹 **Phase 4: Power, Network, DMA, Debug (6 tuần)**
 
-### 5.2 Power Management
-- **Runtime PM APIs**
-- **System suspend/resume**
-- **Clock gating**
-- **Voltage/frequency scaling**
+**Mục tiêu**: Viết hoặc chỉnh sửa driver thực tế, debug, tối ưu.
 
-## 6. GPIO & PINCONTROL
+| Tuần | Nội dung        | Bài tập                                            |
+| ---- | --------------- | -------------------------------------------------- |
+| 17   | Regulator       | Enable PMIC của BBB, debug nguồn                   |
+| 18   | Thermal         | Đọc nhiệt độ SoC nếu có                            |
+| 19   | Ethernet Driver | Phân tích `cpsw` driver, gắn PHY                   |
+| 20   | DMA Engine      | Cấu hình DMA cho SPI hoặc UART                     |
+| 21   | Debug kỹ thuật  | Dùng `devmem`, `trace_printk`, `earlyprintk`, JTAG |
+| 22   | Tổng kết        | Viết báo cáo cấu trúc BSP BBB bạn build được       |
 
-### 6.1 GPIO Subsystem
-```c
-// Modern GPIO APIs
-struct gpio_desc *gpio;
-gpio = devm_gpiod_get(&pdev->dev, "reset", GPIOD_OUT_LOW);
-gpiod_set_value(gpio, 1);
-```
+📌 Kết quả: Hiểu toàn bộ pipeline khởi động của Linux trên BBB.
 
-### 6.2 Pincontrol Subsystem
-- **Pin muxing configuration**
-- **Pin electrical properties**
-- **Integration với Device Tree**
+---
 
-## 7. DMA & MEMORY (Quan trọng cho performance)
+## 🛠 Công cụ & môi trường đề xuất
 
-### 7.1 DMA APIs
-```c
-// Coherent DMA memory
-void *cpu_addr = dma_alloc_coherent(&pdev->dev, size, 
-                                   &dma_handle, GFP_KERNEL);
+* Toolchain: `arm-linux-gnueabihf-` (Ubuntu package: `gcc-arm-linux-gnueabihf`)
+* Kernel source: `https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git`
+* U-Boot source: `https://source.denx.de/u-boot/u-boot.git`
+* Rootfs: Debian/BusyBox minimal hoặc `buildroot`
 
-// DMA mapping
-dma_addr_t dma_addr = dma_map_single(&pdev->dev, cpu_addr, 
-                                    size, DMA_TO_DEVICE);
-```
+---
 
-### 7.2 Memory Types trong Embedded
-- **Cached vs Uncached memory**
-- **DMA coherent memory**
-- **Reserved memory regions**
+## 🎓 Tài liệu học tập
 
-## 8. FILESYSTEMS & BLOCK DEVICES
+| Chủ đề            | Nguồn học đề xuất                                                  |
+| ----------------- | ------------------------------------------------------------------ |
+| Device Tree       | [elinux.org Device Tree](https://elinux.org/Device_Tree_Reference) |
+| BSP Driver Dev    | [LWN.net: Platform Devices](https://lwn.net/Articles/448499/)      |
+| BBB Hardware      | [BBB SRM & TRM](https://beagleboard.org/black)                     |
+| Kernel Driver     | [Linux Device Drivers 3rd Edition](https://lwn.net/Kernel/LDD3/)   |
+| Kernel Subsystems | Kernel doc: `/Documentation/` trong source tree                    |
 
-### 8.1 Block Device Drivers
-- **gendisk structure**
-- **request_queue operations**
-- **Bio processing**
+---
 
-**Ứng dụng:** SD/MMC cards, NAND flash, eMMC
-
-### 8.2 MTD (Memory Technology Devices)
-- **NAND flash handling**
-- **NOR flash support**
-- **Bad block management**
-
-## 9. NETWORKING TRONG EMBEDDED
-
-### 9.1 Socket Programming trong Kernel
-- **Netlink sockets**
-- **Raw sockets**
-- **Custom protocol families**
-
-### 9.2 Network Namespaces
-- **Container networking**
-- **Network isolation**
-
-## 10. DEBUGGING & PROFILING
-
-### 10.1 Kernel Debugging Tools
-```bash
-# Debug techniques cần biết
-dmesg
-cat /proc/interrupts
-cat /proc/meminfo
-cat /sys/kernel/debug/...
-```
-
-### 10.2 Tracing & Profiling
-- **ftrace framework**
-- **perf tools**
-- **KGDB/KDB debugging**
-
-## 11. REAL-TIME FEATURES
-
-### 11.1 RT Kernel Patches
-- **PREEMPT_RT patch set**
-- **High resolution timers**
-- **Real-time scheduling**
-
-### 11.2 Low Latency Programming
-- **Interrupt latency optimization**
-- **CPU isolation**
-- **Memory locking**
-
-## ROADMAP HỌC TẬP ĐỀ XUẤT
-
-### Phase 1: Foundation (2-3 tháng)
-1. **Kernel module programming**
-2. **Character device drivers**
-3. **Basic memory management**
-4. **Simple GPIO drivers**
-
-### Phase 2: Core Skills (3-4 tháng)
-1. **Platform drivers với Device Tree**
-2. **I2C/SPI device drivers**  
-3. **Interrupt handling**
-4. **Clock & power management**
-
-### Phase 3: Advanced (4-6 tháng)
-1. **Network device drivers**
-2. **Block device & MTD**
-3. **DMA programming**
-4. **Performance optimization**
-
-### Phase 4: Specialization (ongoing)
-1. **Real-time systems**
-2. **Security features**
-3. **Custom filesystems**
-4. **Hypervisor/virtualization**
-
-## TÀI NGUYÊN HỌC TẬP
-
-### Sách Quan Trọng
-- **"Linux Device Drivers" (LDD3)** - Cơ bản nhất
-- **"Linux Kernel Development" - Robert Love**
-- **"Essential Linux Device Drivers" - Sreekrishnan Venkateswaran**
-
-### Hands-on Practice
-- **Raspberry Pi / BeagleBone development**
-- **QEMU ARM virtualization**
-- **Real hardware: STM32MP1, i.MX series**
-
-### Source Code Reading
-```bash
-# Directories quan trọng cần đọc
-drivers/gpio/
-drivers/i2c/
-drivers/spi/
-drivers/platform/
-arch/arm/boot/dts/
-```
-
-## SKILLS THỰC TẾ CẦN ĐẠT
-
-### Technical Skills
-- Viết được platform driver hoàn chỉnh
-- Debug kernel panic/oops
-- Optimize interrupt latency
-- Port drivers giữa kernel versions
-- Integrate với userspace applications
-
-### Tools Mastery
-- **Cross-compilation toolchain**
-- **Device Tree compiler (dtc)**
-- **Kernel build system (Kbuild)**
-- **Git kernel development workflow**
-
-### Hardware Understanding
-- **SoC architecture (ARM Cortex-A/M)**
-- **Bus protocols (AHB, APB, AXI)**
-- **Memory hierarchy & caching**
-- **Power domains & clock trees**
-
-Tập trung vào **Platform Drivers** và **Device Tree** trước tiên vì đây là foundation của hầu hết embedded Linux development!
